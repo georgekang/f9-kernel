@@ -9,9 +9,6 @@
 #include <platform/stm32f4/registers.h>
 #include <platform/cortex_m.h>
 
-#define IRQ_ENABLE	1
-#define IRQ_DISABLE	0
-
 typedef enum IRQn {
 	/* Cortex-M4 Processor Exceptions Numbers */
 	NonMaskableInt_IRQn	= -14,	/*!< 2 Non Maskable Interrupt */
@@ -106,6 +103,7 @@ typedef enum IRQn {
 	CRYP_IRQn		= 79,	/*!< CRYP crypto global interrupt */
 	HASH_RNG_IRQn		= 80,	/*!< Hash and Rng global interrupt */
 	FPU_IRQn		= 81,	/*!< FPU global interrupt */
+	IRQn_NUM,
 } IRQn_Type;
 
 #define MAX_IRQn FPU_IRQn

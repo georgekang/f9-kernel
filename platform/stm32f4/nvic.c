@@ -18,6 +18,7 @@ void _undefined_handler(void)
 /* for the sake of saving space, provide default device IRQ handler with
  * weak alias.
  */
+#if 0
 #define DEFAULT_IRQ_VEC(n)						\
 	void nvic_handler##n(void)					\
 		__attribute__((weak, alias("_undefined_handler")));
@@ -25,6 +26,7 @@ void _undefined_handler(void)
 #define IRQ_VEC_N_OP	DEFAULT_IRQ_VEC
 #include "platform/stm32f4/nvic_private.h"
 #undef IRQ_VEC_N_OP
+#endif
 
 void NVIC_PriorityGroupConfig(uint32_t NVIC_PriorityGroup)
 {

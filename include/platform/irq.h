@@ -170,4 +170,7 @@ static inline int irq_number(void)
 
 extern volatile tcb_t *current;
 
+/* FIXME*/
+#define KERNEL_INTERRUPT_52
+
 #endif	/* PLATFORM_IRQ_H_ */
