@@ -3,7 +3,7 @@
 
 /* interrupt ipc message */
 enum {
-	IRQ_IPC_NUM = 0,
+	IRQ_IPC_IRQN = 0,
 	IRQ_IPC_TID,
 	IRQ_IPC_HANDLER,
 	IRQ_IPC_ACTION,

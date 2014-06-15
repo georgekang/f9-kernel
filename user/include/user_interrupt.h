@@ -10,11 +10,12 @@
 #include <user_runtime.h>
 #include <interrupt_ipc.h>
 
+#define IRQ_STACK_SIZE	256
 
 typedef void (*irq_handler_t)(void);
 
 __USER_TEXT
-L4_Word_t request_irq(unsigned int irq, irq_handler_t handler, uint16_t priority);
+L4_Word_t request_irq(unsigned int irq, irq_handler_t handler, uint16_t priority, L4_Word_t addr);
 
 __USER_TEXT
 L4_Word_t enable_irq(unsigned int irq);

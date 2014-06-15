@@ -3,6 +3,7 @@
 #include <platform/irq.h>
 #include <interrupt.h>
 #include <interrupt_ipc.h>
+#include <debug.h>
 
 #include INC_PLAT(nvic.h)
 
@@ -25,6 +26,9 @@ static void __user_interrupt_handler(int n)
 	/* TODO: remove it to support different priority */
 	irq_disable();
 
+	/* FIXME:  Orz........ */
+	NVIC_DisableIRQ(n);
+
 	/* TODO: What behavior is better? */
 	if (user_irq[n].handler == NULL)
 		goto INT_OUT;
@@ -43,7 +47,9 @@ static void __user_interrupt_handler(int n)
 
 	/* ipc message to user interrupt handler */
 	tag.s.label = USER_INTERRUPT_LABEL;
+	tag.s.n_untyped = IRQ_IPC_MSG_NUM;
 	ipc_write_mr(thr, 0, tag.raw);
+	ipc_write_mr(thr, IRQ_IPC_IRQN + 1, (uint32_t)n);
 	ipc_write_mr(thr,IRQ_IPC_HANDLER + 1, (uint32_t)user_irq[n].handler);
 	ipc_write_mr(thr,IRQ_IPC_ACTION + 1, (uint32_t)user_irq[n].action);
 	thr->utcb->sender = TID_TO_GLOBALID(THREAD_INTERRUPT);
@@ -72,13 +78,29 @@ INT_OUT:
 #undef IRQ_VEC_N_OP
 #undef USER_INTERRUPT
 
+#define USER_IRQ_REGISTER	0
+#define USER_IRQ_MODIFY		1
+
+static void nvic_config(int irq, int state)
+{
+	if (state == USER_IRQ_REGISTER) {
+		NVIC_ClearPendingIRQ(irq);
+		NVIC_SetPriority(irq, 0xf, 0);
+	}
+
+	if (user_irq[irq].action == IRQ_ENABLE) {
+		NVIC_ClearPendingIRQ(irq);
+		NVIC_EnableIRQ(irq);
+	}  else
+		NVIC_DisableIRQ(irq);
+}
+
 /* TODO: Ignore priority now. Handle different priority in the future. */
 void register_user_irq_handler(tcb_t *from)
 {
 	ipc_msg_tag_t tag;
-	uint16_t n, action, priority;
-	irq_handler_t handler;
-	tcb_t *thr;
+	uint16_t n;
+	l4_thread_t tid;
 
 	tag.raw = ipc_read_mr(from, 0);
 
@@ -86,20 +108,24 @@ void register_user_irq_handler(tcb_t *from)
 	if (tag.s.label != USER_INTERRUPT_LABEL)
 		return;
 
-	n = (uint16_t)from->ctx.regs[IRQ_IPC_NUM + 1];
-	thr = thread_by_globalid((l4_thread_t)from->ctx.regs[IRQ_IPC_TID + 1]);
-	handler = (irq_handler_t)from->ctx.regs[IRQ_IPC_HANDLER + 1];
-	action = (uint16_t)from->ctx.regs[IRQ_IPC_ACTION + 1];
-	priority = (uint16_t)from->ctx.regs[IRQ_IPC_PRIORITY + 1];
+	n = (uint16_t)from->ctx.regs[IRQ_IPC_IRQN + 1];
+	tid = (l4_thread_t)from->ctx.regs[IRQ_IPC_TID + 1];
 
-	/* FIXME: how to return if there is error? */
+	/* FIXME: how to handle invalid irqn */
 	if (n > MAX_IRQn)
 		return;
 
-	user_irq[n].thr = thr;
-	user_irq[n].action = action;
-	user_irq[n].priority = priority;
-	user_irq[n].handler = handler;
+	if (tid != L4_NILTHREAD) {
+		user_irq[n].thr = thread_by_globalid(tid);
+		user_irq[n].handler = (irq_handler_t)from->ctx.regs[IRQ_IPC_HANDLER + 1];
+		user_irq[n].action = (uint16_t)from->ctx.regs[IRQ_IPC_ACTION + 1];
+		user_irq[n].priority = (uint16_t)from->ctx.regs[IRQ_IPC_PRIORITY + 1];
+		nvic_config(n, USER_IRQ_REGISTER);
+	} else {
+		/* just modify action */
+		user_irq[n].action = (uint16_t)from->ctx.regs[IRQ_IPC_ACTION + 1];
+		nvic_config(n, USER_IRQ_MODIFY);
+	}
 }
 
 
