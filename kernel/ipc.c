@@ -206,6 +206,9 @@ void sys_ipc(uint32_t *param1)
 		caller->state = T_RECV_BLOCKED;
 		caller->ipc_from = from_tid;
 
+		if (from_tid == TID_TO_GLOBALID(THREAD_INTERRUPT))
+			start_user_irq_handler(caller);
+
 		dbg_printf(DL_IPC, "IPC: %t receiving\n", caller->t_globalid);
 
 		return;
