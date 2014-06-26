@@ -57,11 +57,19 @@ static int irq_queue_pop(void)
 	return n;
 }
 
+static int irq_queue_is_empty(void)
+{
+	return (irq_queue.head == irq_queue.tail);
+}
+
 static void irq_schedule_by_queue(void)
 {
 	tcb_t *thr;
 	int irq;
 	ipc_msg_tag_t tag;
+
+	if (irq_queue_is_empty())
+		return;
 
 	irq = irq_queue.q[irq_queue.head];
 	thr = user_irq[irq].thr;
